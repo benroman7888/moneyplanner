@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#172033">
 <link rel="manifest" href="manifest.json">
 <title>Money Planner</title>
 <style>
@@ -19,7 +19,8 @@ label{display:block;font-size:13px;color:#667085}input,select{display:block;widt
 button{min-height:44px;border:1px solid #d3d8df;border-radius:11px;background:#fff;padding:9px 13px;font-weight:700}button.primary{background:#172033;color:#fff}
 h2{font-size:18px;margin:0 0 10px}.pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef1f5;font-size:12px;font-weight:700}
 .hidden{display:none}.empty{padding:18px 0;color:#667085;text-align:center}
-table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 3px;border-top:1px solid #edf0f3}td:last-child{text-align:right;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 3px;border-top:1px solid #edf0f3;text-align:left}td:nth-child(3),td:nth-child(4){text-align:right;font-weight:700}
+.smallbtn{min-height:34px;padding:6px 9px;font-size:12px}.paid{opacity:.52;text-decoration:line-through}.summary{font-size:14px;line-height:1.5}
 @media(max-width:520px){.grid,.grid3{grid-template-columns:1fr}.wrap{padding-left:11px;padding-right:11px}}
 </style>
 </head>
@@ -27,7 +28,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 3px;bord
 <div class="wrap">
 <header><div class="brand">Money Planner</div><div class="muted">Household cash-flow planner</div></header>
 <nav>
-<button class="active" data-tab="dash">Dashboard</button><button data-tab="forecast">Forecast</button><button data-tab="budget">Budget</button><button data-tab="payments">Payments</button><button data-tab="settings">Settings</button>
+<button class="active" data-tab="dash">Today</button><button data-tab="forecast">Forecast</button><button data-tab="budget">Budget</button><button data-tab="payments">Payments</button><button data-tab="settings">Settings</button>
 </nav>
 
 <section id="dash">
@@ -39,7 +40,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 3px;bord
 <div class="card"><div class="muted">Suggested savings</div><div class="big good" id="save"></div></div>
 <div class="card"><div class="muted">Next income</div><div class="big" style="font-size:21px" id="nextIncome"></div></div>
 </div>
-<div class="card"><h2 id="status"></h2><div class="muted" id="statusText"></div></div>
+<div class="card"><h2 id="status"></h2><div class="summary" id="statusText"></div></div>
+<div class="card"><h2>Money to protect</h2><div id="protect"></div></div>
 <div class="card"><h2>Next 14 days</h2><div id="next14"></div></div>
 <div class="card"><h2>Debt snapshot</h2><div id="debts"></div></div>
 </section>
@@ -66,19 +68,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:9px 3px;bord
 <div class="card hidden" id="paymentFormCard"><h2>Add payment</h2><form id="paymentForm">
 <div class="grid"><label>Name<input id="pName" required></label><label>Amount (£)<input id="pAmount" type="number" min="0" step=".01" required></label></div>
 <div class="grid" style="margin-top:10px"><label>Frequency<select id="pFreq"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="4weekly">Every 4 weeks</option></select></label><label>Next due<input id="pDate" type="date" required></label></div>
-div><button class="primary" style="margin-top:12px" type="submit">Save payment</button> <button type="button" id="cancelPayment">Cancel</button></form></div>
+<button class="primary" style="margin-top:12px" type="submit">Save payment</button> <button type="button" id="cancelPayment">Cancel</button></form></div>
 </section>
 
 <section id="settings" class="hidden">
 <div class="card"><h2>Account balance</h2><label>Current Revolut balance (£)<input id="balanceInput" type="number" min="0" step=".01"></label><button class="primary" id="saveBalance" style="margin-top:12px">Save balance</button></div>
 <div class="card"><h2>One-off expense</h2><form id="extraForm"><div class="grid"><label>Description<input id="eName" required></label><label>Amount (£)<input id="eAmount" type="number" min="0" step=".01" required></label></div><label style="margin-top:10px">Date<input id="eDate" type="date" required></label><button class="primary" style="margin-top:12px">Add expense</button></form><div id="extraList"></div></div>
-<div class="card"><h2>Backup</h2><button id="export">Export budget</button> <button id="reset">Reset to original figures</button><div class="muted" style="margin-top:8px">Export creates a JSON backup of your settings and payments.</div></div>
+<div class="card"><h2>Backup</h2><button id="export">Export budget</button> <button id="reset">Reset to original figures</button><div class="muted" style="margin-top:8px">Export creates a backup of your settings, payments and payment history.</div></div>
 </section>
 </div>
 <script>
-const KEY="moneyPlannerV1";
+const KEY="moneyPlannerV2";
 const original={
- balance:31.46,buffer:100,wages:300,wife:200,food:200,electric:25,cu:60,
+ balance:31.46,buffer:100,wages:300,wife:200,food:200,electric:25,cu:60,paid:{},
  payments:[
  {name:"YouTube Premium",amount:12.99,freq:"monthly",date:"2026-10-01"},
  {name:"Car Tax",amount:18.81,freq:"monthly",date:"2026-10-01"},
@@ -100,20 +102,25 @@ const original={
  {name:"Moneyboat",amount:10.63,freq:"weekly",date:"2026-09-22"},
  {name:"Quidmarket",amount:8.48,freq:"weekly",date:"2026-09-24"},
  {name:"Zable",amount:52,freq:"monthly",date:"2026-09-25"}
- ],extras:[],
+ ],
+ extras:[],
  debts:[["Ocean","£186.03 / £200 limit","£9.70 minimum"],["Zable","£1,018.52 / £1,000 limit","£52 payment"],["Moneyboat","10 × £10.63 remaining","Tuesday"],["Quidmarket","~15 × £8.48 remaining","Thursday"]]
 };
-let data=JSON.parse(localStorage.getItem(KEY)||"null")||structuredClone(original);
-const $=id=>document.getElementById(id), money=n=>"£"+Math.max(0,n).toFixed(2);
-const dayUTC=s=>new Date(s+"T00:00:00Z"), today=()=>{const d=new Date();return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))};
+let data=JSON.parse(localStorage.getItem(KEY)||"null");
+if(!data){const old=JSON.parse(localStorage.getItem("moneyPlannerV1")||"null");data=old||structuredClone(original);data.paid=data.paid||{};save()}
 function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+const $=id=>document.getElementById(id);
+const money=n=>"£"+Math.abs(Number(n)||0).toFixed(2);
+const signed=n=>(n<0?"−":"+")+money(n);
+const dayUTC=s=>new Date(s+"T00:00:00Z");
+const today=()=>{const d=new Date();return new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))};
 function addMonths(d,n){let x=new Date(d);x.setUTCMonth(x.getUTCMonth()+n);return x}
+function key(e){return e.date.toISOString().slice(0,10)+"|"+e.name+"|"+e.amt.toFixed(2)}
+function isPaid(e){return !!data.paid[key(e)]}
 function eventsUntil(days){
  const start=today(),end=new Date(start);end.setUTCDate(end.getUTCDate()+days);let a=[];
  const add=(date,name,amt)=>{if(date>=start&&date<end)a.push({date,name,amt})};
- let d=new Date(start);
- // weekly income: next Thursday/Friday
- d=new Date(start);while(d.getUTCDay()!=4)d.setUTCDate(d.getUTCDate()+1);
+ let d=new Date(start);while(d.getUTCDay()!=4)d.setUTCDate(d.getUTCDate()+1);
  for(;d<end;d.setUTCDate(d.getUTCDate()+7))add(new Date(d),"Wages",data.wages);
  d=new Date(start);while(d.getUTCDay()!=5)d.setUTCDate(d.getUTCDate()+1);
  for(;d<end;d.setUTCDate(d.getUTCDate()+7))add(new Date(d),"Wife transfer",data.wife);
@@ -125,27 +132,32 @@ function eventsUntil(days){
  ];
  fixed.forEach(x=>add(dayUTC(x[0]),x[1],x[2]));
  data.payments.forEach(p=>{let d=dayUTC(p.date),step=p.freq==="weekly"?7:p.freq==="4weekly"?28:0;while(d<end){add(new Date(d),p.name,-p.amount);if(p.freq==="monthly")d=addMonths(d,1);else d.setUTCDate(d.getUTCDate()+step)}});
- // weekly budget commitments
- d=new Date(start);for(;d<end;d.setUTCDate(d.getUTCDate()+7)){add(new Date(d),"Food",-data.food);add(new Date(d),"Electricity",-data.electric);add(new Date(d),"Credit Union",-data.cu)}
+ // Weekly commitments are scheduled on payday day so the weekly envelope is visible once per week.
+ d=new Date(start);while(d.getUTCDay()!=4)d.setUTCDate(d.getUTCDate()+1);
+ for(;d<end;d.setUTCDate(d.getUTCDate()+7)){add(new Date(d),"Food",-data.food);add(new Date(d),"Electricity",-data.electric);add(new Date(d),"Credit Union",-data.cu)}
  data.extras.forEach(x=>add(dayUTC(x.date),x.name,-x.amount));
- return a.sort((a,b)=>a.date-b.date)
+ return a.sort((a,b)=>a.date-b.date||a.name.localeCompare(b.name))
 }
-function calc(days){let bal=data.balance,min=bal,list=eventsUntil(days);list.forEach(e=>{bal+=e.amt;min=Math.min(min,bal)});return{bal,min,list}}
+function calc(days){let bal=data.balance,min=bal,list=eventsUntil(days).filter(e=>!isPaid(e));list.forEach(e=>{bal+=e.amt;min=Math.min(min,bal)});return{bal,min,list}}
 function render(){
  $("balance").textContent=money(data.balance);$("balanceInput").value=data.balance;$("food").value=data.food;$("electric").value=data.electric;$("cu").value=data.cu;$("wages").value=data.wages;$("wife").value=data.wife;$("buffer").value=data.buffer;
  const c=calc(60), safe=Math.max(0,Math.min(data.balance,c.min)-data.buffer), savings=Math.max(0,c.min-data.buffer);
  $("safe").textContent=money(safe);$("save").textContent=money(savings);
  $("status").textContent=savings>0?"Potentially safe to save "+money(savings):"No savings recommended at the moment";
- $("statusText").textContent=savings>0?"Based on the current forecast and your £"+data.buffer+" protected buffer.":"Keep your available cash for planned commitments and the protected buffer.";
+ $("statusText").textContent=savings>0?"The forecast stays above your £"+data.buffer+" protected buffer.":"Keep available cash for planned commitments and your protected buffer.";
  const ni=c.list.find(e=>e.amt>0);$("nextIncome").textContent=ni?ni.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" · "+money(ni.amt):"—";
- $("next14").innerHTML=c.list.filter(e=>e.date<new Date(today().getTime()+14*86400000)).slice(0,20).map(e=>`<div class="item row"><span><strong>${e.name}</strong><br><span class="muted">${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></span><strong class="${e.amt<0?"bad":"good"}">${e.amt<0?"−":"+"}${money(e.amt)}</strong></div>`).join("")||'<div class="empty">No transactions.</div>';
+ const upcoming=c.list.filter(e=>e.date<new Date(today().getTime()+14*86400000));
+ const protectOut=upcoming.filter(e=>e.amt<0).reduce((s,e)=>s+Math.abs(e.amt),0);
+ $("protect").innerHTML=`<div class="item row"><span>Upcoming outgoings (14 days)</span><strong>${money(protectOut)}</strong></div><div class="item row"><span>Protected safety buffer</span><strong>${money(data.buffer)}</strong></div><div class="item row"><span>Total to keep aside</span><strong>${money(protectOut+data.buffer)}</strong></div>`;
+ $("next14").innerHTML=upcoming.slice(0,24).map(e=>`<div class="item row ${isPaid(e)?"paid":""}"><span><strong>${e.name}</strong><br><span class="muted">${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></span><span style="text-align:right"><strong class="${e.amt<0?"bad":"good"}">${signed(e.amt)}</strong><br><button class="smallbtn" data-paid="${key(e)}">${isPaid(e)?"Paid ✓":"Mark paid"}</button></span></div>`).join("")||'<div class="empty">No transactions.</div>';
  $("debts").innerHTML=data.debts.map(d=>`<div class="item row"><span><strong>${d[0]}</strong><br><span class="muted">${d[1]} · ${d[2]}</span></span></div>`).join("");
  renderForecast();renderPayments();renderExtras()
 }
-function renderForecast(){const days=Number($("days").value),c=calc(days);let bal=data.balance,rows="";c.list.forEach(e=>{bal+=e.amt;rows+=`<tr><td>${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</td><td>${e.name}</td><td class="${e.amt<0?"bad":"good"}">${e.amt<0?"−":"+"}${money(e.amt)}</td><td>${money(bal)}</td></tr>`});$("forecastTable").innerHTML=`<div class="item row"><span>Lowest projected balance</span><strong>${money(c.min)}</strong></div><div style="overflow:auto"><table><tr><th>Date</th><th>Item</th><th>Change</th><th>Balance</th></tr>${rows}</table></div>`}
+function renderForecast(){const days=Number($("days").value),c=calc(days);let bal=data.balance,rows="";c.list.forEach(e=>{bal+=e.amt;rows+=`<tr><td>${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</td><td>${e.name}</td><td class="${e.amt<0?"bad":"good"}">${signed(e.amt)}</td><td>${money(bal)}</td></tr>`});$("forecastTable").innerHTML=`<div class="item row"><span>Lowest projected balance</span><strong>${money(c.min)}</strong></div><div style="overflow:auto"><table><tr><th>Date</th><th>Item</th><th>Change</th><th>Balance</th></tr>${rows}</table></div>`}
 function renderPayments(){$("paymentList").innerHTML=data.payments.map((p,i)=>`<div class="item row"><span><strong>${p.name}</strong><br><span class="muted">${money(p.amount)} · ${p.freq} · next ${dayUTC(p.date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></span><button data-del="${i}" type="button">Remove</button></div>`).join("")}
 function renderExtras(){$("extraList").innerHTML=data.extras.map((x,i)=>`<div class="item row"><span>${x.name} · ${dayUTC(x.date).toLocaleDateString("en-GB")}</span><span><strong>${money(x.amount)}</strong> <button data-extra="${i}" type="button">×</button></span></div>`).join("")}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll("section").forEach(x=>x.classList.add("hidden"));$(b.dataset.tab).classList.remove("hidden")});
+$("next14").onclick=e=>{const k=e.target.dataset.paid;if(!k)return;data.paid[k]=!data.paid[k];save();render()};
 $("saveBudget").onclick=()=>{data.food=+$("food").value||0;data.electric=+$("electric").value||0;data.cu=+$("cu").value||0;save();render()};
 $("saveIncome").onclick=()=>{data.wages=+$("wages").value||0;data.wife=+$("wife").value||0;save();render()};
 $("saveBuffer").onclick=()=>{data.buffer=Math.max(0,+$("buffer").value||0);save();render()};
