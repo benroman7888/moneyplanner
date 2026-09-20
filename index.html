@@ -180,7 +180,8 @@ function render(){
  const upcoming=c.list.filter(e=>e.date<new Date(today().getTime()+14*86400000));
  const protectOut=upcoming.filter(e=>e.amt<0).reduce((s,e)=>s+Math.abs(e.amt),0);
  $("protect").innerHTML=`<div class="item row"><span>Upcoming outgoings (14 days)</span><strong>${money(protectOut)}</strong></div><div class="item row"><span>Protected safety buffer</span><strong>${money(data.buffer)}</strong></div><div class="item row"><span>Total to keep aside</span><strong>${money(protectOut+data.buffer)}</strong></div>`;
- $("next14").innerHTML=upcoming.slice(0,24).map(e=>`<div class="item row ${isPaid(e)?"paid":""}"><span><strong>${e.name}</strong><br><span class="muted">${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></span><span style="text-align:right"><strong class="${e.amt<0?"bad":"good"}">${signed(e.amt)}</strong><br><button class="smallbtn" data-paid="${key(e)}">${isPaid(e)?"Paid ✓":(e.amt<0?"Mark paid":"Mark received")}</button></span></div>`).join("")||'<div class="empty">No transactions.</div>';
+ const upcomingDisplay=upcoming.filter(e=>e.name!=="Food");
+ $("next14").innerHTML=upcomingDisplay.slice(0,24).map(e=>`<div class="item row ${isPaid(e)?"paid":""}"><span><strong>${e.name}</strong><br><span class="muted">${e.date.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span></span><span style="text-align:right"><strong class="${e.amt<0?"bad":"good"}">${signed(e.amt)}</strong><br><button class="smallbtn" data-paid="${key(e)}">${isPaid(e)?"Paid ✓":(e.amt<0?"Mark paid":"Mark received")}</button></span></div>`).join("")||'<div class="empty">No transactions.</div>';
  $("debts").innerHTML=data.debts.map(d=>`<div class="item row"><span><strong>${d[0]}</strong><br><span class="muted">${d[1]} · ${d[2]}</span></span></div>`).join("");
  renderForecast();renderPayments();renderExtras()
 }
@@ -213,7 +214,7 @@ $("export").onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type
 $("reset").onclick=()=>{if(confirm("Reset all figures to the original setup?")){data=structuredClone(original);save();render()}};
 $("eDate").value=new Date().toISOString().slice(0,10);
 render();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw-v5.js").catch(()=>{});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw-v6.js").catch(()=>{});
 </script>
 </body>
 </html>
