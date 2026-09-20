@@ -172,7 +172,7 @@ $("extraList").onclick=e=>{const i=e.target.dataset.extra;if(i!==undefined){data
 $("export").onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="money-planner-backup.json";a.click();URL.revokeObjectURL(a.href)};
 $("reset").onclick=()=>{if(confirm("Reset all figures to the original setup?")){data=structuredClone(original);save();render()}};
 render();
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw-v4.js").catch(()=>{});
 </script>
 </body>
 </html>
